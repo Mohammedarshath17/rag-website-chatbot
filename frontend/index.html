@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRAG - Premium Website Chatbot</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Plotly.js for Admin Analytics Charts -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Panel -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-spider logo-icon"></i>
+                    <span>Web<span class="logo-accent">RAG</span></span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary new-scrape-btn" id="open-scrape-modal">
+                <i class="fa-solid fa-plus"></i> Ingest New Website
+            </button>
+            
+            <!-- Admin Panel Toggle -->
+            <button class="btn btn-secondary admin-toggle-btn" id="open-admin-btn" style="display: none; margin-bottom: 24px; width: 100%; justify-content: center;">
+                <i class="fa-solid fa-gauge-high"></i> Admin Dashboard
+            </button>
+            
+            <div class="sidebar-section">
+                <span class="section-title">Active Chat Sessions</span>
+                <ul class="session-list" id="session-list">
+                    <!-- Session items will be dynamically rendered here -->
+                    <div class="no-sessions">No sessions found. Ingest a website to begin!</div>
+                </ul>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile-section" id="user-profile-section" style="display: none; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <div class="user-profile-info" style="display: flex; flex-direction: column; overflow: hidden; max-width: 80%;">
+                        <span class="user-profile-name" id="user-display-name" style="font-weight: 600; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Username</span>
+                        <span class="user-profile-email" id="user-display-email" style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">name@domain.com</span>
+                    </div>
+                    <button class="logout-btn" id="logout-btn" title="Sign Out" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; transition: var(--transition-smooth); padding: 4px;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+                <div class="user-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Backend Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <!-- Active Site Header -->
+            <header class="chat-header">
+                <div class="active-site-info">
+                    <h2 class="active-site-title" id="active-site-title">Select or Ingest a Website</h2>
+                    <span class="active-site-url" id="active-site-url">No URL selected</span>
+                </div>
+                
+                <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
+                    <button class="btn btn-secondary feedback-btn" id="open-feedback-modal" style="display: none; padding: 6px 12px; font-size: 12px;">
+                        <i class="fa-regular fa-star"></i> Feedback
+                    </button>
+                    
+                    <!-- Analytics Indicators -->
+                    <div class="header-analytics" id="header-analytics" style="display: none;">
+                        <div class="analytic-item">
+                            <span class="analytic-label">Pages Scraped</span>
+                            <span class="analytic-value" id="analytic-pages">0</span>
+                        </div>
+                        <div class="analytic-item">
+                            <span class="analytic-label">Words Indexed</span>
+                            <span class="analytic-value" id="analytic-words">0</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Message Window -->
+            <div class="chat-window" id="chat-window">
+                <div class="chat-empty-state" id="chat-empty-state">
+                    <i class="fa-solid fa-comments empty-icon"></i>
+                    <h3>Welcome to WebRAG Chatbot</h3>
+                    <p>Ingest any documentation site or blog. WebRAG will recursively scrape, index chunks into FAISS, and answer queries securely with zero hallucination.</p>
+                    <button class="btn btn-secondary" id="empty-state-scrape-btn">Get Started</button>
+                </div>
+                
+                <div class="messages-container" id="messages-container" style="display: none;">
+                    <!-- Messages will be rendered here dynamically -->
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <footer class="chat-footer">
+                <form class="input-form" id="chat-form">
+                    <!-- Language Selector -->
+                    <div class="language-selector-wrapper" style="margin-right: 12px; border-right: 1px solid rgba(255,255,255,0.08); padding-right: 8px;">
+                        <select id="language-selector" title="Select Translation Language" style="background: none; border: none; color: var(--text-main); font-size: 13.5px; outline: none; cursor: pointer; font-family: var(--font-inter);">
+                            <option value="en" style="background-color: var(--bg-app); color: var(--text-main);" selected>🇬🇧 English</option>
+                            <option value="hi" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Hindi</option>
+                            <option value="ta" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Tamil</option>
+                            <option value="mr" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Marathi</option>
+                            <option value="te" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Telugu</option>
+                            <option value="kn" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Kannada</option>
+                            <option value="bn" style="background-color: var(--bg-app); color: var(--text-main);">🇮🇳 Bengali</option>
+                            <option value="de" style="background-color: var(--bg-app); color: var(--text-main);">🇩🇪 German</option>
+                            <option value="fr" style="background-color: var(--bg-app); color: var(--text-main);">🇫🇷 French</option>
+                            <option value="ja" style="background-color: var(--bg-app); color: var(--text-main);">🇯🇵 Japanese</option>
+                        </select>
+                    </div>
+                    <input type="text" id="chat-input" placeholder="Ask a question about the scraped website..." required disabled autocomplete="off">
+                    <button type="submit" class="btn btn-send" id="chat-submit" disabled>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Ingestion Modal -->
+    <div class="modal-overlay" id="scrape-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-spider"></i> Ingest & Index Website</h3>
+                <button class="close-modal-btn" id="close-scrape-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="scrape-form" class="modal-body">
+                <div class="form-group">
+                    <label for="scrape-url">Website URL to Ingest</label>
+                    <input type="url" id="scrape-url" placeholder="https://react.dev/reference" required autocomplete="off">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="max-depth">Maximum Scraping Depth</label>
+                        <select id="max-depth">
+                            <option value="1">1 (Direct URL only)</option>
+                            <option value="2" selected>2 (URL + direct links) [Recommended]</option>
+                            <option value="3">3 (Deep recursive links)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max-pages">Max Pages to Crawl</label>
+                        <input type="number" id="max-pages" min="1" max="150" value="30" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block" id="start-scrape-btn">
+                    <i class="fa-solid fa-rocket"></i> Start Scraper & Indexer
+                </button>
+            </form>
+            
+            <!-- Real-time Crawler Progression Terminal -->
+            <div class="crawler-terminal" id="crawler-terminal" style="display: none;">
+                <div class="terminal-header">
+                    <span><span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span> Live Crawler Logs</span>
+                    <span class="terminal-loader" id="terminal-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                </div>
+                <div class="terminal-body" id="terminal-logs">
+                    <!-- Logs stream in real-time here -->
+                </div>
+                <div class="terminal-status" id="terminal-status">
+                    Scraping in progress...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auth Overlay (Login/Signup Cards) -->
+    <div class="auth-overlay" id="auth-overlay">
+        <div class="auth-card" id="login-card">
+            <div class="auth-header">
+                <i class="fa-solid fa-spider auth-logo-icon"></i>
+                <h2>Welcome to WebRAG</h2>
+                <p>Sign in to access your chat sessions</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" placeholder="name@domain.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+            <div class="auth-footer">
+                <span>Don't have an account? <a href="#" id="go-to-signup">Sign Up</a></span>
+            </div>
+        </div>
+
+        <div class="auth-card" id="signup-card" style="display: none;">
+            <div class="auth-header">
+                <i class="fa-solid fa-user-plus auth-logo-icon"></i>
+                <h2>Create Account</h2>
+                <p>Get started with WebRAG Chatbot</p>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <input type="text" id="signup-username" placeholder="johndoe" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email Address</label>
+                    <input type="email" id="signup-email" placeholder="name@domain.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password">
+                    <small style="color: var(--text-dark); font-size: 11px; margin-top: 4px;">Min 8 chars, uppercase, lowercase, number, and special char.</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+            <div class="auth-footer">
+                <span>Already have an account? <a href="#" id="go-to-login">Sign In</a></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedback-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-regular fa-star"></i> Submit Feedback</h3>
+                <button class="close-modal-btn" id="close-feedback-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="feedback-form" class="modal-body">
+                <div class="form-group">
+                    <label>Rate your experience</label>
+                    <div class="star-rating" style="display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 8px; font-size: 24px; margin: 8px 0;">
+                        <input type="radio" id="star5" name="rating" value="5" style="display: none;" required><label for="star5" style="cursor: pointer; color: var(--text-dark);"><i class="fa-solid fa-star"></i></label>
+                        <input type="radio" id="star4" name="rating" value="4" style="display: none;"><label for="star4" style="cursor: pointer; color: var(--text-dark);"><i class="fa-solid fa-star"></i></label>
+                        <input type="radio" id="star3" name="rating" value="3" style="display: none;"><label for="star3" style="cursor: pointer; color: var(--text-dark);"><i class="fa-solid fa-star"></i></label>
+                        <input type="radio" id="star2" name="rating" value="2" style="display: none;"><label for="star2" style="cursor: pointer; color: var(--text-dark);"><i class="fa-solid fa-star"></i></label>
+                        <input type="radio" id="star1" name="rating" value="1" style="display: none;"><label for="star1" style="cursor: pointer; color: var(--text-dark);"><i class="fa-solid fa-star"></i></label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-comments">Comments / Suggestions</label>
+                    <textarea id="feedback-comments" rows="4" placeholder="How can we improve this response?" autocomplete="off" style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 10px 14px; color: var(--text-main); font-size: 14px; font-family: var(--font-inter); outline: none; transition: var(--transition-smooth); resize: vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="submit-feedback-btn">
+                    Submit Feedback
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Overlay -->
+    <div class="admin-panel-overlay" id="admin-overlay" style="display: none;">
+        <div class="admin-container">
+            <header class="admin-header">
+                <div class="admin-title">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <h2>Admin System Dashboard</h2>
+                </div>
+                <button class="close-admin-btn" id="close-admin-btn"><i class="fa-solid fa-xmark"></i> Close Dashboard</button>
+            </header>
+
+            <div class="admin-scrollable-content">
+                <!-- KPI Cards -->
+                <div class="admin-kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-value" id="kpi-users">0</span>
+                            <span class="kpi-label">Total Users</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-value" id="kpi-words">0</span>
+                            <span class="kpi-label">Words Indexed</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-network-wired"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-value" id="kpi-sessions">0</span>
+                            <span class="kpi-label">Active Sessions</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-user-lock"></i></div>
+                        <div class="kpi-details">
+                            <span class="kpi-value" id="kpi-locked">0</span>
+                            <span class="kpi-label">Locked Accounts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="admin-charts-grid">
+                    <div class="chart-card">
+                        <h3>Language Popularity</h3>
+                        <div id="chart-languages" class="plotly-chart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Model Usage Statistics</h3>
+                        <div id="chart-models" class="plotly-chart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Feature Hits Distribution</h3>
+                        <div id="chart-features" class="plotly-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Word Cloud and CSV Export -->
+                <div class="admin-utility-grid">
+                    <div class="utility-card feedback-cloud-card">
+                        <h3>Feedback Word Cloud</h3>
+                        <div class="wordcloud-wrapper">
+                            <img src="" id="admin-wordcloud" alt="Feedback Word Cloud" />
+                        </div>
+                    </div>
+                    <div class="utility-card export-actions-card">
+                        <h3>System Actions & Exports</h3>
+                        <p>Export database transaction history and ratings logs directly to CSV file formats for advanced offline business intelligence analysis.</p>
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary" id="export-feedback-btn">
+                                <i class="fa-solid fa-download"></i> Export Feedback CSV
+                            </button>
+                            <button class="btn btn-secondary" id="export-activity-btn">
+                                <i class="fa-solid fa-download"></i> Export Activity Logs CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tables Section -->
+                <div class="admin-tables-grid">
+                    <div class="table-card">
+                        <h3>User Management</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Email Address</th>
+                                        <th>Created At</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-table">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="table-card">
+                        <h3>User Feedback History</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Rating</th>
+                                        <th>Comments</th>
+                                        <th>Submitted At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-feedback-table">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Marked library for markdown rendering in chat bubbles -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Custom Application Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>

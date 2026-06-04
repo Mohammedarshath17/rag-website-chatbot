@@ -1,0 +1,22 @@
+services:
+  webrag:
+    build: .
+    container_name: webrag-chatbot
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - RELOAD=False
+      - DATABASE_URL=sqlite:///./chatbot.db
+      - VECTOR_DB_PATH=./faiss_index
+      - HF_HOME=/app/models_cache
+      - JWT_SECRET=production-secret-key-for-rag-chatbot
+    volumes:
+      # Persist SQLite Database file
+      - ./chatbot.db:/app/chatbot.db
+      # Persist FAISS Index and chunk metadata
+      - ./faiss_index:/app/faiss_index
+      # Persist downloaded model weights (Qwen, NLLB, SentenceTransformers) to host
+      - ./models_cache:/app/models_cache
+    restart: unless-stopped

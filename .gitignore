@@ -1,0 +1,40 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python caching & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+
+# Local database file
+chatbot.db
+chatbot.db-journal
+
+# FAISS Vector database index & metadata
+faiss_index/
+
+# Downloaded HuggingFace model weights cache
+models_cache/
+
+# Large local archive files
+*.zip
+backend.zip
+
+# Server logs
+*.log
+server.log
+
+# Environment configuration (excludes secrets)
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# VS Code specific local settings
+.vscode/
