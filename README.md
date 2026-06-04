@@ -27,38 +27,33 @@ The following diagram illustrates the end-to-end data pipeline of the WebRAG app
 
 ```mermaid
 graph TD
-    subgraph Client ["Client (Browser Interface)"]
+    subgraph Client ["Client Browser Interface"]
         UI["Glassmorphic HTML5/CSS3/JS UI"]
     end
-
-    subgraph API ["FastAPI Web Server (Uvicorn)"]
-        main["main.py (Router & Controllers)"]
-        db["database.py (SQLite3 Schema & Queries)"]
+    subgraph API ["FastAPI Web Server Uvicorn"]
+        main["main.py Router & Controllers"]
+        db["database.py SQLite3 Schema & Queries"]
     end
-
     subgraph Core ["Local AI & Indexing Core"]
-        scraper["scraper.py (AsyncWebScraper)"]
-        embeddings["vector_store.py (SentenceTransformers / all-MiniLM-L6-v2)"]
+        scraper["scraper.py AsyncWebScraper"]
+        embeddings["vector_store.py SentenceTransformers / all-MiniLM-L6-v2"]
         faiss["FAISS Vector Index"]
         llm["Qwen-2.5-1.5B-Instruct LLM Engine"]
-        translator["translator.py (TranslationEngine / NLLB-200)"]
+        translator["translator.py TranslationEngine / NLLB-200"]
     end
-
     UI -->|1. Ingest Request| main
     main -->|Crawl URL| scraper
     scraper -->|HTML Content| main
     main -->|Generate Chunks & Embeddings| embeddings
     embeddings -->|Store Vectors| faiss
-
     UI -->|2. Chat Query| main
     main -->|Query Translation if needed| translator
     main -->|Semantic Vector Search| faiss
     faiss -->|Top Context Chunks| main
     main -->|Context + History Prompt| llm
-    llm -->|Stream Tokens (SSE)| UI
-
+    llm -->|Stream Tokens SSE| UI
     main -->|Write Stats / Log History| db
-    db -->|Store/Retrieve Sessions & Accounts| SQLite[("SQLite Database (chatbot.db)")]
+    db -->|Store/Retrieve Sessions & Accounts| SQLite[("SQLite Database chatbot.db")]
 ```
 
 ### 1. Ingestion Pipeline
