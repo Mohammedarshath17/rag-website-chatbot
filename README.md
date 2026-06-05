@@ -113,7 +113,7 @@ rag-website-chatbot/
 │   ├── js/
 │   │   └── app.js
 │   └── index.html
-├── .env
+├── .env (local only - not committed)
 ├── .env.template
 ├── .gitignore
 ├── Dockerfile
