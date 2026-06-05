@@ -3,10 +3,10 @@ services:
     build: .
     container_name: webrag-chatbot
     ports:
-      - "8501:8501"
+      - "8000:8000"
     environment:
       - HOST=0.0.0.0
-      - PORT=8501
+      - PORT=8000
       - RELOAD=False
       - DATABASE_URL=sqlite:///./chatbot.db
       - VECTOR_DB_PATH=./faiss_index

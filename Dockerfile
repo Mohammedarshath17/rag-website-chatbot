@@ -5,7 +5,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV HF_HOME=/app/models_cache
-ENV PORT=8501
+ENV PORT=8000
 ENV HOST=0.0.0.0
 ENV RELOAD=False
 
@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose the API port
-EXPOSE 8501
+EXPOSE 8000
 
 # Run the backend FastAPI application
 CMD ["python", "-m", "backend.main"]

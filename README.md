@@ -154,15 +154,15 @@ pip install -r backend/requirements.txt
 #### What Was Done
 - Created a Dockerfile defining the Python environment and dependencies
 - Built a Docker image from the project directory
-- Ran the Streamlit application inside a Docker container
+- Ran the FastAPI application inside a Docker container
 
 #### Quick Docker Commands
 ```bash
 # Build the image
-docker build -t policynav .
+docker build -t webrag .
 
-# Run the container (maps container port 8501 to host port 8501)
-docker run -p 8501:8501 policynav
+# Run the container (maps container port 8000 to host port 8000)
+docker run -p 8000:8000 webrag
 ```
 
 #### Sample Dockerfile
@@ -176,9 +176,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8501
+EXPOSE 8000
 
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["python", "-m", "backend.main"]
 ```
 
 ---
@@ -192,7 +192,7 @@ cp .env.template .env
 
 The application uses the following config keys:
 - `HOST`: Server bind address (Default: `0.0.0.0`)
-- `PORT`: Port the FastAPI app runs on (Default: `8000` for bare metal, `8501` for Docker)
+- `PORT`: Port the FastAPI app runs on (Default: `8000`)
 - `DATABASE_URL`: Location URI for SQLite3 (Default: `sqlite:///./chatbot.db`)
 - `VECTOR_DB_PATH`: Folder mapping the FAISS index (Default: `./faiss_index`)
 
@@ -209,13 +209,10 @@ python -m backend.main
 
 ### 2. Access the Application
 Open your browser and navigate to:
-- **Docker deployment (Option B)**: 👉 **`http://localhost:8501/`**
-- **Local run (Option A)**: 👉 **`http://localhost:8000/`**
+👉 **`http://localhost:8000/`**
 
 - **Default Administrator Credentials**: `admin@webrag.com` / `AdminPassword123!`
-- **Interactive OpenAPI Specification (Swagger Docs)**: 
-  - Docker: `http://localhost:8501/docs`
-  - Local: `http://localhost:8000/docs`
+- **Interactive OpenAPI Specification (Swagger Docs)**: `http://localhost:8000/docs`
 
 ---
 
