@@ -159,6 +159,23 @@ def delete_session(session_id: str) -> bool:
         conn.close()
 
 
+def delete_sessions_bulk(session_ids: list) -> bool:
+    """Deletes multiple chat sessions in a single transaction (cascades to chat history)."""
+    if not session_ids:
+        return True
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        placeholders = ",".join("?" for _ in session_ids)
+        cursor.execute(f"DELETE FROM chat_sessions WHERE session_id IN ({placeholders})", session_ids)
+        conn.commit()
+        return cursor.rowcount > 0
+    except sqlite3.Error:
+        return False
+    finally:
+        conn.close()
+
+
 def get_session(session_id: str):
     """Retrieves session details by id."""
     conn = get_db_connection()

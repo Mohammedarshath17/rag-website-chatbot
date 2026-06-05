@@ -4,6 +4,10 @@ let activeSessionId = null;
 let activeSessionUrl = "";
 let statusPollInterval = null;
 
+// Bulk Session Management State
+let isManageMode = false;
+let selectedSessionIds = [];
+
 // Auth State
 let token = null;
 let userRole = null;
@@ -51,6 +55,12 @@ const terminalLoader = document.getElementById("terminal-loader");
 const emptyStateScrapeBtn = document.getElementById("empty-state-scrape-btn");
 
 const sessionList = document.getElementById("session-list");
+const btnManageSessions = document.getElementById("btn-manage-sessions");
+const bulkActionsBar = document.getElementById("bulk-actions-bar");
+const btnCancelManage = document.getElementById("btn-cancel-manage");
+const btnDeleteSelected = document.getElementById("btn-delete-selected");
+const selectedSessionsCount = document.getElementById("selected-sessions-count");
+
 const activeSiteTitle = document.getElementById("active-site-title");
 const activeSiteUrl = document.getElementById("active-site-url");
 const headerAnalytics = document.getElementById("header-analytics");
@@ -63,6 +73,7 @@ const messagesContainer = document.getElementById("messages-container");
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const chatSubmit = document.getElementById("chat-submit");
+const scrollBottomBtn = document.getElementById("scroll-bottom-btn");
 
 // New DOM Elements
 const openFeedbackBtn = document.getElementById("open-feedback-modal");
@@ -129,6 +140,14 @@ openScrapeBtn.addEventListener("click", openModal);
 emptyStateScrapeBtn.addEventListener("click", openModal);
 closeScrapeBtn.addEventListener("click", closeModal);
 
+btnManageSessions.addEventListener("click", enterManageMode);
+btnCancelManage.addEventListener("click", exitManageMode);
+btnDeleteSelected.addEventListener("click", () => {
+    if (confirm(`Are you sure you want to delete ${selectedSessionIds.length} selected chat sessions?`)) {
+        deleteSessionsBulk();
+    }
+});
+
 // --- Session Handling ---
 async function fetchSessions() {
     try {
@@ -144,8 +163,15 @@ function renderSessions(sessions) {
     sessionList.innerHTML = "";
     if (!sessions || sessions.length === 0) {
         sessionList.innerHTML = `<div class="no-sessions">No sessions found. Ingest a website to begin!</div>`;
+        btnManageSessions.style.display = "none";
+        isManageMode = false;
+        selectedSessionIds = [];
+        if (bulkActionsBar) bulkActionsBar.style.display = "none";
         return;
     }
+    
+    // Only display Manage button if we are not currently managing
+    btnManageSessions.style.display = isManageMode ? "none" : "flex";
     
     sessions.forEach(session => {
         const item = document.createElement("li");
@@ -164,23 +190,47 @@ function renderSessions(sessions) {
             minute: '2-digit'
         });
         
-        item.innerHTML = `
-            <span class="session-item-url" title="${session.url}">${displayUrl}</span>
-            <span class="session-item-date">${date}</span>
-            <button class="btn-delete-session" title="Delete Session">
-                <i class="fa-solid fa-trash-can"></i>
-            </button>
-        `;
-        
-        item.addEventListener("click", () => selectSession(session.session_id, session.url));
-        
-        const deleteBtn = item.querySelector(".btn-delete-session");
-        deleteBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (confirm(`Are you sure you want to clear/delete the chat session for ${displayUrl}?`)) {
-                deleteSession(session.session_id);
-            }
-        });
+        if (isManageMode) {
+            const isChecked = selectedSessionIds.includes(session.session_id);
+            item.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                    <input type="checkbox" class="session-checkbox" data-session-id="${session.session_id}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 14px; height: 14px;">
+                    <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
+                        <span class="session-item-url" title="${session.url}">${displayUrl}</span>
+                        <span class="session-item-date">${date}</span>
+                    </div>
+                </div>
+            `;
+            
+            const checkbox = item.querySelector(".session-checkbox");
+            item.addEventListener("click", (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                toggleSessionSelection(session.session_id, checkbox.checked);
+            });
+            checkbox.addEventListener("change", (e) => {
+                toggleSessionSelection(session.session_id, checkbox.checked);
+            });
+        } else {
+            item.innerHTML = `
+                <span class="session-item-url" title="${session.url}">${displayUrl}</span>
+                <span class="session-item-date">${date}</span>
+                <button class="btn-delete-session" title="Delete Session">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+            
+            item.addEventListener("click", () => selectSession(session.session_id, session.url));
+            
+            const deleteBtn = item.querySelector(".btn-delete-session");
+            deleteBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (confirm(`Are you sure you want to clear/delete the chat session for ${displayUrl}?`)) {
+                    deleteSession(session.session_id);
+                }
+            });
+        }
         
         sessionList.appendChild(item);
     });
@@ -221,6 +271,86 @@ async function deleteSession(sessionId) {
     } catch (e) {
         console.error("Error deleting session:", e);
         alert("Failed to delete session due to network error.");
+    }
+}
+
+function toggleSessionSelection(sessionId, isChecked) {
+    if (isChecked) {
+        if (!selectedSessionIds.includes(sessionId)) {
+            selectedSessionIds.push(sessionId);
+        }
+    } else {
+        selectedSessionIds = selectedSessionIds.filter(id => id !== sessionId);
+    }
+    updateBulkActionsUI();
+}
+
+function updateBulkActionsUI() {
+    selectedSessionsCount.innerText = selectedSessionIds.length;
+    btnDeleteSelected.disabled = selectedSessionIds.length === 0;
+}
+
+function enterManageMode() {
+    isManageMode = true;
+    selectedSessionIds = [];
+    btnManageSessions.style.display = "none";
+    bulkActionsBar.style.display = "flex";
+    updateBulkActionsUI();
+    fetchSessions();
+}
+
+function exitManageMode() {
+    isManageMode = false;
+    selectedSessionIds = [];
+    bulkActionsBar.style.display = "none";
+    btnManageSessions.style.display = "flex";
+    fetchSessions();
+}
+
+async function deleteSessionsBulk() {
+    if (selectedSessionIds.length === 0) return;
+    
+    try {
+        const response = await authFetch(`${API_BASE}/sessions`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ session_ids: selectedSessionIds })
+        });
+        
+        if (response.ok) {
+            // Check if active session was deleted
+            if (selectedSessionIds.includes(activeSessionId)) {
+                // Reset active session state
+                activeSessionId = null;
+                activeSessionUrl = "";
+                
+                // Reset UI
+                activeSiteTitle.innerText = "Select or Ingest a Website";
+                activeSiteUrl.innerText = "No URL selected";
+                activeSiteUrl.removeAttribute("href");
+                
+                chatEmptyState.style.display = "flex";
+                messagesContainer.style.display = "none";
+                messagesContainer.innerHTML = "";
+                
+                chatInput.disabled = true;
+                chatSubmit.disabled = true;
+                chatInput.placeholder = "Ask a question about the scraped website...";
+                
+                openFeedbackBtn.style.display = "none";
+                headerAnalytics.style.display = "none";
+            }
+            
+            exitManageMode();
+        } else {
+            const error = await response.json();
+            alert(`Failed to delete sessions: ${error.detail || "Unknown error"}`);
+        }
+    } catch (e) {
+        console.error("Error deleting sessions bulk:", e);
+        alert("Failed to delete sessions due to network error.");
     }
 }
 
@@ -460,6 +590,24 @@ function scrollToBottom() {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+// Show/hide floating scroll-to-bottom button
+chatWindow.addEventListener("scroll", () => {
+    const isScrolledUp = chatWindow.scrollHeight - chatWindow.clientHeight - chatWindow.scrollTop > 200;
+    if (isScrolledUp && activeSessionId) {
+        scrollBottomBtn.classList.add("visible");
+    } else {
+        scrollBottomBtn.classList.remove("visible");
+    }
+});
+
+// Scroll to bottom smoothly when clicked
+scrollBottomBtn.addEventListener("click", () => {
+    chatWindow.scrollTo({
+        top: chatWindow.scrollHeight,
+        behavior: "smooth"
+    });
+});
+
 // --- Dynamic Stream Fetch Chat Route ---
 chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -698,6 +846,12 @@ function logout() {
     safeClearStorage();
     activeSessionId = null;
     activeSessionUrl = "";
+    
+    // Reset manage sessions UI & state
+    isManageMode = false;
+    selectedSessionIds = [];
+    if (bulkActionsBar) bulkActionsBar.style.display = "none";
+    if (btnManageSessions) btnManageSessions.style.display = "none";
     
     // Hide feedback button & modal
     openFeedbackBtn.style.display = "none";

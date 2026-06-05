@@ -36,7 +36,20 @@
             </button>
             
             <div class="sidebar-section">
-                <span class="section-title">Active Chat Sessions</span>
+                <div class="sidebar-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="section-title" style="margin-bottom: 0;">Active Chat Sessions</span>
+                    <button class="btn-manage-sessions" id="btn-manage-sessions" title="Manage Sessions">
+                        <i class="fa-solid fa-list-check"></i> Manage
+                    </button>
+                </div>
+                <div class="bulk-actions-bar" id="bulk-actions-bar">
+                    <button class="btn btn-secondary" id="btn-cancel-manage" style="padding: 4px 8px; font-size: 11px; font-family: var(--font-outfit); border-radius: 6px;">
+                        Cancel
+                    </button>
+                    <button class="btn" id="btn-delete-selected" style="padding: 4px 8px; font-size: 11px; font-family: var(--font-outfit); border-radius: 6px; background: #ef4444; color: white;" disabled>
+                        <i class="fa-solid fa-trash-can"></i> Delete (<span id="selected-sessions-count">0</span>)
+                    </button>
+                </div>
                 <ul class="session-list" id="session-list">
                     <!-- Session items will be dynamically rendered here -->
                     <div class="no-sessions">No sessions found. Ingest a website to begin!</div>
@@ -101,6 +114,11 @@
                     <!-- Messages will be rendered here dynamically -->
                 </div>
             </div>
+
+            <!-- Floating Scroll to Bottom Button -->
+            <button class="scroll-bottom-btn" id="scroll-bottom-btn" title="Scroll to Bottom">
+                <i class="fa-solid fa-arrow-down"></i>
+            </button>
 
             <!-- Chat Input Area -->
             <footer class="chat-footer">

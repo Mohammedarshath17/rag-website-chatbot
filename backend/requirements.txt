@@ -5,7 +5,10 @@ beautifulsoup4==4.12.3
 faiss-cpu==1.8.0
 sentence-transformers==3.0.1
 transformers==4.41.2
+# CPU/Standard PyTorch requirement (will be overridden by CUDA wheel for GPU acceleration)
 torch==2.3.1
+# To enable GPU acceleration (NVIDIA GPU with CUDA 12.1), run:
+# pip install torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121 --index-url https://download.pytorch.org/whl/cu121
 accelerate==0.31.0
 python-dotenv==1.0.1
 numpy==1.26.4

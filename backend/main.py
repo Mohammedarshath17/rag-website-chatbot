@@ -201,6 +201,9 @@ class FeedbackRequest(BaseModel):
     rating: int
     comments: Optional[str] = ""
 
+class BulkDeleteSessionsRequest(BaseModel):
+    session_ids: List[str]
+
 # ----------------- BACKGROUND TASK FUNCTION -----------------
 async def background_crawl_task(url: str, max_depth: int, max_pages: int):
     global crawling_status
@@ -293,6 +296,28 @@ def delete_chat_session(session_id: str, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=500, detail="Failed to delete session.")
         
     return {"message": "Session deleted successfully."}
+
+
+@app.delete("/api/sessions")
+def delete_chat_sessions_bulk(req: BulkDeleteSessionsRequest, current_user: dict = Depends(get_current_user)):
+    """Deletes multiple chat sessions and cascades history removal."""
+    if not req.session_ids:
+        return {"message": "No sessions specified for deletion."}
+        
+    # Check ownership and existence for all requested sessions
+    is_admin = bool(current_user.get("is_admin"))
+    for session_id in req.session_ids:
+        session = db.get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found.")
+        if not is_admin and session.get("user_email") != current_user["email"]:
+            raise HTTPException(status_code=403, detail=f"Access denied to session {session_id}.")
+            
+    success = db.delete_sessions_bulk(req.session_ids)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete sessions.")
+        
+    return {"message": f"Successfully deleted {len(req.session_ids)} sessions."}
 
 
 @app.post("/api/scrape")
