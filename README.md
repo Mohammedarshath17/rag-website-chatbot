@@ -148,13 +148,27 @@ pip install -r backend/requirements.txt
 
 ### Option B: Containerized Run (Docker)
 
-Ensure Docker Desktop and Docker Compose are installed on your host.
+Ensure Docker Desktop is installed on your host. You can deploy the container using standalone Docker commands or Docker Compose:
+
+#### 1. Standalone Docker Container
+
+```bash
+# Build the image with tag 'policynav'
+docker build -t policynav .
+
+# Run the container (maps host port 8501 to container port 8501)
+docker run -p 8501:8501 --name webrag-chatbot -v ./models_cache:/app/models_cache -v ./chatbot.db:/app/chatbot.db -v ./faiss_index:/app/faiss_index policynav
+```
+
+#### 2. Multi-Container Orchestration (Docker Compose)
 
 ```bash
 # Build and launch containers in background
 docker compose up --build -d
 ```
-Docker mounts `./models_cache` inside the container to avoid redownloading models on restart. The DB (`chatbot.db`) and vector index (`faiss_index`) are also persisted.
+
+> [!NOTE]
+> Docker mounts `./models_cache` inside the container to avoid redownloading models on restart. The SQLite database (`chatbot.db`) and FAISS vector index (`faiss_index`) are also persisted on the host.
 
 ---
 
@@ -167,7 +181,7 @@ cp .env.template .env
 
 The application uses the following config keys:
 - `HOST`: Server bind address (Default: `0.0.0.0`)
-- `PORT`: Port the FastAPI app runs on (Default: `8000`)
+- `PORT`: Port the FastAPI app runs on (Default: `8000` for bare metal, `8501` for Docker)
 - `DATABASE_URL`: Location URI for SQLite3 (Default: `sqlite:///./chatbot.db`)
 - `VECTOR_DB_PATH`: Folder mapping the FAISS index (Default: `./faiss_index`)
 
@@ -184,10 +198,13 @@ python -m backend.main
 
 ### 2. Access the Application
 Open your browser and navigate to:
-👉 **`http://localhost:8000/`**
+- **Docker deployment (Option B)**: 👉 **`http://localhost:8501/`**
+- **Local run (Option A)**: 👉 **`http://localhost:8000/`**
 
 - **Default Administrator Credentials**: `admin@webrag.com` / `AdminPassword123!`
-- **Interactive OpenAPI Specification (Swagger Docs)**: `http://localhost:8000/docs`
+- **Interactive OpenAPI Specification (Swagger Docs)**: 
+  - Docker: `http://localhost:8501/docs`
+  - Local: `http://localhost:8000/docs`
 
 ---
 
