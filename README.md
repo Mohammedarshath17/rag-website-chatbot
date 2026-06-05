@@ -200,16 +200,76 @@ The application uses the following config keys:
 
 ## 🚀 Running the Application
 
-### 1. Launch backend and web services
-For a local installation, start the backend from the project root:
+### On Google Colab
+To run the project on Google Colab (using hardware acceleration like a T4 GPU):
+1. Open a new notebook in Google Colab and select the **T4 GPU** runtime (`Runtime` -> `Change runtime type`).
+2. Set any environment variables if needed (e.g. `JWT_SECRET` via the Secrets panel).
+3. Run the following cells in order:
+   - **Mount Google Drive**:
+     ```python
+     from google.colab import drive
+     drive.mount('/content/drive')
+     ```
+   - **Clone the repository & install dependencies**:
+     ```python
+     !git clone https://github.com/mohammedarshath17/rag-website-chatbot.git
+     %cd rag-website-chatbot
+     !pip install -r backend/requirements.txt
+     ```
+   - **Run the FastAPI application**:
+     ```python
+     !python -m backend.main
+     ```
+   - **Expose application port 8000 via ngrok**:
+     Expose port `8000` via ngrok or a similar local tunnel to get a public URL for access.
+
+### On Local Machine / Docker
+
+#### 1. Clone the Repo
+```bash
+git clone https://github.com/mohammedarshath17/rag-website-chatbot.git
+cd rag-website-chatbot
+```
+
+#### 2. Set Environment Variables
+Copy `.env.template` to `.env` and adjust settings:
+```bash
+# Linux / macOS / PowerShell
+cp .env.template .env
+
+# Windows (cmd)
+copy .env.template .env
+```
+Or export them in your terminal:
+```bash
+export HOST="0.0.0.0"
+export PORT="8000"
+export DATABASE_URL="sqlite:///./chatbot.db"
+export VECTOR_DB_PATH="./faiss_index"
+```
+
+#### 3. Run Directly (Local Machine)
+Ensure Python dependencies are installed and start the FastAPI server:
 ```bash
 python -m backend.main
 ```
-*Note: On first launch, the models (approx 3.2 GB total download) are fetched from HuggingFace. Subsequent launches are instantaneous.*
 
-### 2. Access the Application
-Open your browser and navigate to:
-👉 **`http://localhost:8000/`**
+#### 4. Run via Docker
+```bash
+# Build the image
+docker build -t webrag .
+
+# Run the container (maps container port 8000 to host port 8000)
+docker run -p 8000:8000 \
+  -e HOST="0.0.0.0" \
+  -e PORT="8000" \
+  -v ./models_cache:/app/models_cache \
+  -v ./chatbot.db:/app/chatbot.db \
+  -v ./faiss_index:/app/faiss_index \
+  webrag
+```
+
+Open **`http://localhost:8000/`** in your browser.
 
 - **Default Administrator Credentials**: `admin@webrag.com` / `AdminPassword123!`
 - **Interactive OpenAPI Specification (Swagger Docs)**: `http://localhost:8000/docs`
